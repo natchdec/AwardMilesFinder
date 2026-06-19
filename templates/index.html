@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROP Award Miles Finder</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #522369; /* Thai Airways Purple */ text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="date"], select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { background: #522369; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background: #3d1a4e; }
+        .error { background: #fee; color: #c00; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #fcc; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #522369; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        .available { color: green; font-weight: bold; }
+        .waitlist { color: orange; font-weight: bold; }
+        .unavailable { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✈️ ROP Award Miles Finder</h1>
+        
+        {% if error %}
+        <div class="error">
+            <strong>Error:</strong> {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="POST">
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="origin">Origin (e.g., BKK)</label>
+                    <input type="text" id="origin" name="origin" value="{{ origin | default('BKK') }}" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="destination">Destination (e.g., FRA)</label>
+                    <input type="text" id="destination" name="destination" value="{{ destination | default('FRA') }}" required>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="departure_date">Departure Date</label>
+                    <input type="date" id="departure_date" name="departure_date" value="{{ date | default('') }}" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="cabin_class">Cabin Class</label>
+                    <select id="cabin_class" name="cabin_class">
+                        <option value="Economy" {% if cabin == 'Economy' %}selected{% endif %}>Economy</option>
+                        <option value="Business" {% if cabin == 'Business' or not cabin %}selected{% endif %}>Business</option>
+                        <option value="First" {% if cabin == 'First' %}selected{% endif %}>First</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="submit">Search Availability</button>
+        </form>
+
+        {% if flights is defined and flights != None %}
+            <h2>Results for {{ origin }} ➔ {{ destination }} on {{ date }}</h2>
+            {% if flights|length > 0 %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flight Number</th>
+                            <th>Departure Time</th>
+                            <th>Cabin</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for flight in flights %}
+                        <tr>
+                            <td>{{ flight['Flight Number'] }}</td>
+                            <td>{{ flight['Departure Time'] }}</td>
+                            <td>{{ flight['Cabin Class'] }}</td>
+                            <td class="{% if flight['Status']|lower == 'available' %}available{% elif flight['Status']|lower == 'waitlist' %}waitlist{% else %}unavailable{% endif %}">
+                                {{ flight['Status'] }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="text-align: center; margin-top: 20px; color: #666;">No flights found or waiting for real API mapping.</p>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>
