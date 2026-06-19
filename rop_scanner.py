@@ -16,11 +16,13 @@ def check_rop_availability(origin, destination, departure_date, cabin_class):
     Queries the ROP backend API for award flight availability.
     """
     
+    from datetime import datetime
+    
     # -------------------------------------------------------------------------
     # 1. UPDATE THIS URL
     # Replace with the actual endpoint URL from your intercepted cURL request.
     # -------------------------------------------------------------------------
-    api_url = "https://example.thaiairways.com/api/v1/award/search"
+    api_url = "https://www.thaiairways.com/airaward-flights/get-flight-info"
     
     # -------------------------------------------------------------------------
     # 2. UPDATE HEADERS
@@ -29,16 +31,19 @@ def check_rop_availability(origin, destination, departure_date, cabin_class):
     # -------------------------------------------------------------------------
     cookie_str = os.getenv("ROP_COOKIE", "")
     bearer_token = os.getenv("ROP_BEARER_TOKEN", "")
-    session_id = os.getenv("ROP_SESSION_ID", "")
     
     headers = {
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
         # Inject authentication dynamically:
         "Cookie": cookie_str,
-        "Authorization": f"Bearer {bearer_token}" if bearer_token else "",
-        # Add other required headers here (e.g., 'X-CSRF-Token', 'x-api-key', etc.)
+        "Authorization": bearer_token if bearer_token else "",
+        "access-control-expose-headers": "accessToken",
+        "hostname": "https://www.thaiairways.com",
+        "origin": "https://www.thaiairways.com",
+        "referer": "https://www.thaiairways.com/en-th/redemption/select-flight",
+        "source": "website"
     }
     
     # Clean up empty auth headers if they are not used
@@ -52,18 +57,18 @@ def check_rop_availability(origin, destination, departure_date, cabin_class):
     # Map the JSON payload structure from your intercepted cURL.
     # Parameterize the origin, destination, date, and cabin_class.
     # -------------------------------------------------------------------------
+    try:
+        formatted_date = datetime.strptime(departure_date, "%Y-%m-%d").strftime("%d%m%y")
+    except ValueError:
+        formatted_date = departure_date # fallback
+        
     payload = {
-        "searchCriteria": {
-            "origin": origin,
-            "destination": destination,
-            "departureDate": departure_date,
-            "cabinClass": cabin_class,
-            "passengers": {
-                "adults": 1,
-                "children": 0,
-                "infants": 0
-            }
-        }
+        "flightInfo": {
+            "departure": origin,
+            "arrival": destination,
+            "departureDate": formatted_date
+        },
+        "tripType": "R"
     }
     
     try:
